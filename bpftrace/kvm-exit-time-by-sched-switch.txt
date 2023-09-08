@@ -1,0 +1,19 @@
+tracepoint:kvm:kvm_exit {
+        @start[cpu] = nsecs;
+        @start2[cpu] = nsecs;
+}
+t:sched:sched_switch {
+        delete(@start[cpu]);
+}
+t:kvm:kvm_entry / @start[cpu] / {
+        @h = hist((nsecs - @start[cpu]));
+        @c = count();
+        delete(@start[cpu]);
+}
+t:kvm:kvm_entry / @start2[cpu] / {
+        @c2 = count();
+}
+END {
+        clear(@start);
+        clear(@start2);
+}

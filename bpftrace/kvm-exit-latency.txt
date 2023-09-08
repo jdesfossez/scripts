@@ -1,0 +1,15 @@
+#include <uapi/linux/kvm.h>
+t:kvm:kvm_exit {
+        if (args->exit_reason == KVM_EXIT_HLT) {
+                return;
+        }
+        @last_exit_ts[tid] = nsecs;
+}
+
+t:kvm:kvm_entry {
+        @exit_latency = hist(nsecs - @last_exit_ts[tid]);
+}
+
+END {
+        clear(@last_exit_ts);
+}

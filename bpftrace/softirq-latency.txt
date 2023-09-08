@@ -1,0 +1,19 @@
+#define NET_TX_VEC 2
+#define NET_RX_VEC 3
+
+BEGIN {
+        print("Capturing NET_RX softirq entry latency (ns)");
+        print("Hit ctrl+c to stop");
+}
+
+tracepoint:irq:softirq_raise / args->vec == NET_RX_VEC / {
+        // printf("[%02u], raise %u\n", cpu, args->vec)
+        @raise_ts[cpu, args->vec] = nsecs;
+
+}
+
+tracepoint:irq:softirq_entry
+/ args->vec == NET_RX_VEC  && @raise_ts[cpu, args->vec] / {
+        @lat_ns = hist(nsecs - @raise_ts[cpu, args->vec]);
+        delete(@raise_ts[cpu, args->vec]);
+}

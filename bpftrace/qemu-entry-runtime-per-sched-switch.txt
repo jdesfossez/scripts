@@ -1,0 +1,27 @@
+t:sched:sched_switch /args->next_comm == "qemu-system-x86"/ {
+        @sched_start_ts[args->next_pid] = nsecs;
+        @kvm_entry_count[args->next_pid] = 0
+        @kvm_runtime[args->next_pid] = 0
+}
+
+t:sched:sched_switch /args->prev_comm == "qemu-system-x86"/ {
+        @per_sched_vmentry_count = hist(@kvm_entry_count[args->prev_pid]
+        @sched_period = hist(nsecs - @sched_start_ts[args->prev_pid]
+        @vm_runtime = hist(kvm_runtime[args->prev_pid])
+        delete(@sched_start_ts[args->prev_pid])
+        delete(@kvm_entry_count[args->prev_pid])
+        delete(@kvm_runtime[args->prev_pid])
+}
+
+t:kvm:kvm_entry {
+        @vm_entry_ts[tid] = nsecs
+        @vm_entry_delay = hist(nsecs - @sched_start_ts[tid])
+        @kvm_entry_count[tid] += 1
+}
+t:kvm:kvm_exit {
+        @vm_guest_runtime = hist(nsecs - @vm_entry_ts[tid])
+        @kvm_runtime[tid] += nsecs -  @vm_entry_ts[tid]
+        delete(@vm_entry_ts[tid])
+}
+
+END { }

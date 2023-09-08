@@ -1,0 +1,9 @@
+sudo ./bpftrace -e 't:sched:sched_waking { @start[args->pid] = nsecs; }
+        t:sched:sched_switch /@start[args->next_pid]/ {
+                if (nsecs-@start[args->next_pid] > 10000) {
+                        printf("%s (%d) %d ns\n", args->next_comm, args->next_pid, nsecs-@start[args->next_pid])
+                }
+                delete(@start[args->next_pid]);
+        }
+        END { clear(@start); }'
+

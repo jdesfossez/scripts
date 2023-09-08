@@ -1,0 +1,27 @@
+sudo ./bpftrace -e 't:sched:sched_switch /args->prev_comm == "sysbench" && args->prev_state == 0/ {
+                    @start[args->prev_pid] = nsecs;
+                }
+                t:sched:sched_switch /@start[args->next_pid]/ {
+                    @[args->next_pid] = sum(nsecs - @start[args->next_pid]);
+                    delete(@start[args->next_pid]);
+                }
+                END { clear(@start); }'
+
+sudo ./bpftrace -e 't:sched:sched_switch /args->prev_comm == "sysbench" && args->prev_state == 0/ {
+                    @start[args->prev_pid] = nsecs;
+                }
+                t:sched:sched_switch /@start[args->next_pid]/ {
+                    @usecs = hist((nsecs - @start[args->next_pid]) / 1000);
+                    @total = sum(nsecs - @start[args->next_pid]);
+                    delete(@start[args->next_pid]);
+                }
+                END { clear(@start); }'
+
+sudo ./bpftrace -e 't:sched:sched_switch /args->prev_comm == "sysbench" && args->prev_state == 0/ {
+                    @start[args->prev_pid] = nsecs;
+                }
+                t:sched:sched_switch /@start[args->next_pid]/ {
+                    @usecs = hist((nsecs - @start[args->next_pid]) / 1000);
+                    delete(@start[args->next_pid]);
+                }
+                END { clear(@start); }'

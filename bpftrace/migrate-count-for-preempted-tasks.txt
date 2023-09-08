@@ -1,0 +1,22 @@
+t:sched:sched_switch /args->prev_state == 0/ {
+	@preempted[args->prev_pid] = 1;
+}
+
+t:sched:sched_migrate_task /@preempted[args->pid]/ {
+	@preempted_migrates[args->pid] += 1;
+}
+
+t:sched:sched_switch /@preempted[args->next_pid]/ {
+	@preempted_hist = hist(@preempted_migrates[args->next_pid]);
+	if (@preempted_migrates[args->next_pid] > 8) {
+		printf("%llu: %lu (%lu)\n", nsecs, args->next_pid, @preempted_migrates[args->next_pid]);
+	}
+	delete(@preempted[args->next_pid]);
+	delete(@preempted_migrates[args->next_pid]);
+}
+
+interval:s:1 {
+	print(@preempted_hist);
+	clear(@preempted_hist);
+}
+
